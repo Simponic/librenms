@@ -11,6 +11,9 @@ class Grafana extends Transport
     protected $name = "Grafana-OnCall";
     public function deliverAlert($obj, $opts)
     {
+        if (!empty($this->config)) {
+            $opts["url"] = $this->config["url"];
+        }
         return $this->contactGrafana($obj, $opts);
     }
 
@@ -46,7 +49,9 @@ class Grafana extends Transport
                     "type" => "text",
                 ],
             ],
-            "validation" => [],
+            "validation" => [
+                "url" => "required",
+            ],
         ];
     }
 }
