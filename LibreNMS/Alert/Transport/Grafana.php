@@ -31,7 +31,7 @@ class Grafana extends Transport
         curl_setopt($curl, CURLOPT_HTTPHEADER, $headers);
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($curl, CURLOPT_POST, true);
-        curl_setopt($curl, CURLOPT_POSTFIELDS, json_encode(["test" => "yes"]));
+        curl_setopt($curl, CURLOPT_POSTFIELDS, json_encode(["test" => $obj]));
 
         $ret = curl_exec($curl);
         $code = curl_getinfo($curl, CURLINFO_HTTP_CODE);
