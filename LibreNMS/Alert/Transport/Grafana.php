@@ -46,6 +46,7 @@ class Grafana extends Transport
                     "type" => "text",
                 ],
             ],
+            "validation" => [],
         ];
     }
 }
