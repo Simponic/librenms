@@ -21,15 +21,20 @@ class Grafana extends Transport
     {
         $host = $opts["url"];
         $curl = curl_init();
+        $headers = [
+            "Accept: application/json",
+            "Content-Type: application/json",
+        ];
 
         Proxy::applyToCurl($curl);
         curl_setopt($curl, CURLOPT_URL, $host);
-        curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt($curl, CURLOPT_HTTPHEADER, $headers);
+        curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($curl, CURLOPT_POST, true);
+        curl_setopt($curl, CURLOPT_POSTFIELDS, json_encode(["test" => "yes"]));
 
         $ret = curl_exec($curl);
         $code = curl_getinfo($curl, CURLINFO_HTTP_CODE);
-        curl_setopt($curl, CURLOPT_POSTFIELDS, json_encode(["test" => "yes"]));
 
         //        if ($code != 204) {
         //            throw new AlertTransportDeliveryException($obj, $code, $ret);
