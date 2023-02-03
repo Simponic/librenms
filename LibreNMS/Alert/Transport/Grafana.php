@@ -29,7 +29,11 @@ class Grafana extends Transport
     public function deliverAlert($obj, $opts)
     {
         if (!empty($this->config)) {
+            $opts["title"] = $this->config["title"];
             $opts["url"] = $this->config["url"];
+            $opts["message_template"] = $this->config["message_template"];
+            $opts["detail_link_template"] =
+                $this->config["detail_link_template"];
         }
         return $this->contactGrafana($obj, $opts);
     }
@@ -77,7 +81,7 @@ class Grafana extends Transport
         if ($opts["message_body"]) {
             // TODO: Parser
             return [
-                "message" => $obj["hostname"],
+                "message" => $opts["message_template"],
             ];
         }
         return [];
@@ -88,7 +92,7 @@ class Grafana extends Transport
         return [
             "alert_uid" => $obj["uid"],
             "title" => $opts["title"],
-            "link_to_upstream_details" => $obj["detail_link"],
+            "link_to_upstream_details" => $obj["detail_link_template"],
         ];
     }
 
@@ -109,15 +113,15 @@ class Grafana extends Transport
                     "type" => "text",
                 ],
                 [
-                    "title" => "Upstream Link",
-                    "name" => "detail_link",
+                    "title" => "Upstream Link (template)",
+                    "name" => "detail_link_template",
                     "descr" => "Link to Upstream Details",
                     "type" => "text",
                 ],
                 [
-                    "title" => "Message Body",
-                    "name" => "message_body",
-                    "descr" => "Grafana Message Body",
+                    "title" => "Message Body (template)",
+                    "name" => "message_template",
+                    "descr" => "Grafana Message Body (template)",
                     "type" => "textarea",
                 ],
             ],
