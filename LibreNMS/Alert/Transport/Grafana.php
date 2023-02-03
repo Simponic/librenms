@@ -124,8 +124,6 @@ class Grafana extends Transport
             "validation" => [
                 "url" => "required",
                 "title" => "required",
-                "detail_link" => "optional",
-                "message_body" => "optional",
             ],
         ];
     }
