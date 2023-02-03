@@ -92,7 +92,7 @@ class Grafana extends Transport
         return [
             "alert_uid" => $obj["uid"],
             "title" => $opts["title"],
-            "link_to_upstream_details" => $obj["detail_link_template"],
+            "link_to_upstream_details" => $opts["detail_link_template"],
         ];
     }
 
