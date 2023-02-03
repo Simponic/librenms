@@ -70,9 +70,11 @@ class Grafana extends Transport
 
     private function makeBody($obj, $opts)
     {
-        return (object) array_merge(
-            (array) $this->grafana_base_body($obj, $opts),
-            (array) $this->rendered_body($obj, $opts)
+        return (object) array_filter(
+            array_merge(
+                (array) $this->grafana_base_body($obj, $opts),
+                (array) $this->rendered_body($obj, $opts)
+            )
         );
     }
 
