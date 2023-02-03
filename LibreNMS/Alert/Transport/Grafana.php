@@ -78,7 +78,7 @@ class Grafana extends Transport
 
     private function rendered_body($obj, $opts)
     {
-        if ($opts["message_body"]) {
+        if ($opts["message_template"]) {
             // TODO: Parser
             return [
                 "message" => $opts["message_template"],
