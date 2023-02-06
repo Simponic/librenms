@@ -184,7 +184,7 @@ class Grafana extends Transport
                 var_dump($access_to_find_parent_array);
                 return [
                     $to => implode(
-                        '\n',
+                        ", ",
                         array_map(
                             fn($arr) => $arr[$array_field_to_join_on],
                             Grafana::get_field_from_access_order(
