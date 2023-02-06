@@ -59,7 +59,7 @@ class Grafana extends Transport
             "Content-Type: application/json",
         ]);
         curl_setopt($curl, CURLOPT_POST, true);
-        curl_setopt($curl, CURLOPT_POSTFIELDS, json_encode($body));
+        curl_setopt($curl, CURLOPT_POSTFIELDS, json_encode($obj));
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
 
         $ret = curl_exec($curl);
