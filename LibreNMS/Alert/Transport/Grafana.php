@@ -44,14 +44,14 @@ class Grafana extends Transport
 
     public function contactGrafana($obj, $opts)
     {
-        $curl = curl_init();
-        Proxy::applyToCurl($curl);
-
         $aliased_obj = Grafana::build_obj_alias_from_aliases(
             $obj,
             $opts["alias"]
         );
         $body = $this->makeBody($aliased_obj, $opts);
+
+        $curl = curl_init();
+        Proxy::applyToCurl($curl);
 
         curl_setopt($curl, CURLOPT_URL, $opts["url"]);
         curl_setopt($curl, CURLOPT_HTTPHEADER, [
@@ -59,11 +59,7 @@ class Grafana extends Transport
             "Content-Type: application/json",
         ]);
         curl_setopt($curl, CURLOPT_POST, true);
-        curl_setopt(
-            $curl,
-            CURLOPT_POSTFIELDS,
-            json_encode($obj["location"]["lng"])
-        );
+        curl_setopt($curl, CURLOPT_POSTFIELDS, json_encode($body));
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
 
         $ret = curl_exec($curl);
@@ -89,12 +85,12 @@ class Grafana extends Transport
     private function rendered_body($obj, $opts)
     {
         return array_filter([
-            "message" =>
-                $opts["message_template"] ??
-                SimpleTemplate::parse($opts["message_template"], $obj),
-            "link_to_upstream_details" =>
-                $opts["detail_link_template"] ??
-                SimpleTemplate::parse($opts["detail_link_template"], $obj),
+            "message" => $opts["message_template"]
+                ? SimpleTemplate::parse($opts["message_template"], $obj)
+                : null,
+            "link_to_upstream_details" => $opts["detail_link_template"]
+                ? SimpleTemplate::parse($opts["detail_link_template"], $obj)
+                : null,
         ]);
     }
 
@@ -138,7 +134,12 @@ class Grafana extends Transport
 
         $index = $access_order_array[0];
 
-        $ret = ((array) $obj)[$index];
+        if (is_object($obj)) {
+            $ret = $obj->{$index};
+        } elseif (is_array($obj)) {
+            $ret = $obj[$index];
+        }
+
         if (isset($ret)) {
             return Grafana::get_field_from_access(
                 $ret,
