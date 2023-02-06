@@ -22,6 +22,68 @@ use LibreNMS\Alert\Transport;
 use LibreNMS\Exceptions\AlertTransportDeliveryException;
 use LibreNMS\Util\Proxy;
 
+use App\View\SimpleTemplate;
+use Exception;
+
+function tokenize_alias($alias_s)
+{
+    $matches = [];
+    $result = preg_match(
+        "/((?:[\w\d_]|\-\>)+) as ([\w\d_]+)/",
+        $alias_s,
+        $matches
+    );
+
+    if ($result && count($matches) == 3) {
+        return [
+            "from" => $matches[1],
+            "as" => $matches[2],
+        ];
+    }
+    throw new Exception("'" . $alias_s . "' is not a valid alias string.");
+}
+
+function tokenize_alias_strings($f_str)
+{
+    $alias_strings = array_filter(preg_split("/\s*,\s*/", $f_str));
+    $aliases = array_map("tokenize_alias", $alias_strings);
+    return $aliases;
+}
+
+function get_field_from_access($obj, $access_order_array)
+{
+    if (empty($access_order_array)) {
+        return $obj;
+    }
+
+    $index = $access_order_array[0];
+    $ret = ((array) $obj)[$index];
+    if (isset($ret)) {
+        return get_field_from_access($ret, array_slice($access_order_array, 1));
+    }
+
+    throw new Exception("'" . $index . "' is not an accessible field.");
+}
+
+function alias_token($obj, $token)
+{
+    $from = $token["from"];
+    $to = $token["as"];
+
+    return [$to => get_field_from_access($obj, explode("->", $from))];
+}
+
+function build_obj_alias_from_aliases($obj, $alias_strs)
+{
+    $tokens = tokenize_alias_strings($alias_strs);
+
+    return array_reduce(
+        $tokens,
+        fn($a, $x) => array_merge($a, alias_token($obj, $x)),
+        []
+    );
+}
+
 class Grafana extends Transport
 {
     protected $name = "Grafana-OnCall";
@@ -29,6 +91,7 @@ class Grafana extends Transport
     public function deliverAlert($obj, $opts)
     {
         if (!empty($this->config)) {
+            $opts["alias"] = $this->config["alias"];
             $opts["title"] = $this->config["title"];
             $opts["url"] = $this->config["url"];
             $opts["message_template"] = $this->config["message_template"];
@@ -43,19 +106,16 @@ class Grafana extends Transport
         $curl = curl_init();
         Proxy::applyToCurl($curl);
 
-        $host = $opts["url"];
+        $aliased_obj = build_obj_alias_from_aliases($obj, $opts["alias"]);
+        $body = $this->makeBody($aliased_obj, $opts);
 
-        $headers = [
+        curl_setopt($curl, CURLOPT_URL, $opts["url"]);
+        curl_setopt($curl, CURLOPT_HTTPHEADER, [
             "Accept: application/json",
             "Content-Type: application/json",
-        ];
-
-        $body = $this->makeBody($obj, $opts);
-
-        curl_setopt($curl, CURLOPT_URL, $host);
-        curl_setopt($curl, CURLOPT_HTTPHEADER, $headers);
+        ]);
         curl_setopt($curl, CURLOPT_POST, true);
-        curl_setopt($curl, CURLOPT_POSTFIELDS, json_encode($obj));
+        curl_setopt($curl, CURLOPT_POSTFIELDS, json_encode($body));
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
 
         $ret = curl_exec($curl);
@@ -80,21 +140,20 @@ class Grafana extends Transport
 
     private function rendered_body($obj, $opts)
     {
-        if ($opts["message_template"]) {
-            // TODO: Parser
-            return [
-                "message" => $opts["message_template"],
-            ];
-        }
-        return [];
+        return array_filter([
+            "message" =>
+                $opts["message_template"] ??
+                SimpleTemplate::parse($opts["message_template"], $obj),
+            "link_to_upstream_details" =>
+                $opts["detail_link_template"] ??
+                SimpleTemplate::parse($opts["detail_link_template"], $obj),
+        ]);
     }
 
     private function grafana_base_body($obj, $opts)
     {
         return [
-            "alert_uid" => $obj["uid"],
             "title" => $opts["title"],
-            "link_to_upstream_details" => $opts["detail_link_template"],
         ];
     }
 
@@ -106,6 +165,13 @@ class Grafana extends Transport
                     "title" => "WebHook",
                     "name" => "url",
                     "descr" => "Grafana WebHook URL",
+                    "type" => "text",
+                ],
+                [
+                    "title" => "Alias String",
+                    "name" => "alias",
+                    "descr" =>
+                        "Alias strings (a as b, c->d as e, etc.) to use in templates",
                     "type" => "text",
                 ],
                 [
@@ -130,6 +196,7 @@ class Grafana extends Transport
             "validation" => [
                 "url" => "required|url",
                 "title" => "required",
+                "alias" => "required",
             ],
         ];
     }
