@@ -55,7 +55,7 @@ class Grafana extends Transport
         curl_setopt($curl, CURLOPT_URL, $host);
         curl_setopt($curl, CURLOPT_HTTPHEADER, $headers);
         curl_setopt($curl, CURLOPT_POST, true);
-        curl_setopt($curl, CURLOPT_POSTFIELDS, json_encode($body));
+        curl_setopt($curl, CURLOPT_POSTFIELDS, json_encode($obj));
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
 
         $ret = curl_exec($curl);
@@ -128,7 +128,7 @@ class Grafana extends Transport
                 ],
             ],
             "validation" => [
-                "url" => "required",
+                "url" => "required|url",
                 "title" => "required",
             ],
         ];
