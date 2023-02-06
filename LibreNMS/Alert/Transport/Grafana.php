@@ -25,65 +25,6 @@ use LibreNMS\Util\Proxy;
 use App\View\SimpleTemplate;
 use Exception;
 
-function tokenize_alias($alias_s)
-{
-    $matches = [];
-    $result = preg_match(
-        "/((?:[\w\d_]|\-\>)+) as ([\w\d_]+)/",
-        $alias_s,
-        $matches
-    );
-
-    if ($result && count($matches) == 3) {
-        return [
-            "from" => $matches[1],
-            "as" => $matches[2],
-        ];
-    }
-    throw new Exception("'" . $alias_s . "' is not a valid alias string.");
-}
-
-function tokenize_alias_strings($f_str)
-{
-    $alias_strings = array_filter(preg_split("/\s*,\s*/", $f_str));
-    $aliases = array_map("tokenize_alias", $alias_strings);
-    return $aliases;
-}
-
-function get_field_from_access($obj, $access_order_array)
-{
-    if (empty($access_order_array)) {
-        return $obj;
-    }
-
-    $index = $access_order_array[0];
-    $ret = ((array) $obj)[$index];
-    if (isset($ret)) {
-        return get_field_from_access($ret, array_slice($access_order_array, 1));
-    }
-
-    throw new Exception("'" . $index . "' is not an accessible field.");
-}
-
-function alias_token($obj, $token)
-{
-    $from = $token["from"];
-    $to = $token["as"];
-
-    return [$to => get_field_from_access($obj, explode("->", $from))];
-}
-
-function build_obj_alias_from_aliases($obj, $alias_strs)
-{
-    $tokens = tokenize_alias_strings($alias_strs);
-
-    return array_reduce(
-        $tokens,
-        fn($a, $x) => array_merge($a, alias_token($obj, $x)),
-        []
-    );
-}
-
 class Grafana extends Transport
 {
     protected $name = "Grafana-OnCall";
@@ -106,7 +47,10 @@ class Grafana extends Transport
         $curl = curl_init();
         Proxy::applyToCurl($curl);
 
-        $aliased_obj = build_obj_alias_from_aliases($obj, $opts["alias"]);
+        $aliased_obj = Grafana::build_obj_alias_from_aliases(
+            $obj,
+            $opts["alias"]
+        );
         $body = $this->makeBody($aliased_obj, $opts);
 
         curl_setopt($curl, CURLOPT_URL, $opts["url"]);
@@ -155,6 +99,70 @@ class Grafana extends Transport
         return [
             "title" => $opts["title"],
         ];
+    }
+
+    public static function tokenize_alias($alias_s)
+    {
+        $matches = [];
+        $result = preg_match(
+            "/((?:[\w\d_]|\-\>)+) as ([\w\d_]+)/",
+            $alias_s,
+            $matches
+        );
+
+        if ($result && count($matches) == 3) {
+            return [
+                "from" => $matches[1],
+                "as" => $matches[2],
+            ];
+        }
+        throw new Exception("'" . $alias_s . "' is not a valid alias string.");
+    }
+
+    public static function tokenize_alias_strings($f_str)
+    {
+        $alias_strings = array_filter(preg_split("/\s*,\s*/", $f_str));
+        $aliases = array_map("self::tokenize_alias", $alias_strings);
+        return $aliases;
+    }
+
+    public static function get_field_from_access($obj, $access_order_array)
+    {
+        if (empty($access_order_array)) {
+            return $obj;
+        }
+
+        $index = $access_order_array[0];
+        $ret = ((array) $obj)[$index];
+        if (isset($ret)) {
+            return Grafana::get_field_from_access(
+                $ret,
+                array_slice($access_order_array, 1)
+            );
+        }
+
+        throw new Exception("'" . $index . "' is not an accessible field.");
+    }
+
+    public static function alias_token($obj, $token)
+    {
+        $from = $token["from"];
+        $to = $token["as"];
+
+        return [
+            $to => Grafana::get_field_from_access($obj, explode("->", $from)),
+        ];
+    }
+
+    public static function build_obj_alias_from_aliases($obj, $alias_strs)
+    {
+        $tokens = Grafana::tokenize_alias_strings($alias_strs);
+
+        return array_reduce(
+            $tokens,
+            fn($a, $x) => array_merge($a, Grafana::alias_token($obj, $x)),
+            []
+        );
     }
 
     public static function configTemplate()
