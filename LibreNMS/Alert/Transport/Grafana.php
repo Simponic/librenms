@@ -133,15 +133,17 @@ class Grafana extends Transport
         }
 
         $index = $access_order_array[0];
-        $ret = ((array) $obj)[$index];
-        if (isset($ret)) {
-            return Grafana::get_field_from_access(
-                $ret,
-                array_slice($access_order_array, 1)
-            );
+        try {
+            $ret = ((array) $obj)[$index];
+            if (isset($ret)) {
+                return Grafana::get_field_from_access(
+                    $ret,
+                    array_slice($access_order_array, 1)
+                );
+            }
+        } finally {
+            throw new Exception("'" . $index . "' is not an accessible field.");
         }
-
-        throw new Exception("'" . $index . "' is not an accessible field.");
     }
 
     public static function alias_token($obj, $token)
