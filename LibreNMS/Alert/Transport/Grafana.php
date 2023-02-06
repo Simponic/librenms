@@ -105,17 +105,30 @@ class Grafana extends Transport
     {
         $matches = [];
         $result = preg_match(
-            "/((?:[\w\d_]|\-\>)+) as ([\w\d_]+)/",
+            "/(?:((?:[\w\d_])+) )?((?:[\w\d_]|\-\>)+) as ([\w\d_]+)/",
             $alias_s,
             $matches
         );
 
-        if ($result && count($matches) == 3) {
-            return [
-                "from" => $matches[1],
-                "as" => $matches[2],
-            ];
+        if ($result) {
+            switch (count($matches)) {
+                case 3:
+                    return [
+                        "from" => $matches[1],
+                        "as" => $matches[2],
+                    ];
+                    break;
+                case 4:
+                    return [
+                        "keyword" => $matches[1],
+                        "from" => $matches[2],
+                        "as" => $matches[3],
+                    ];
+                    break;
+            }
+            var_dump($matches);
         }
+
         throw new Exception("'" . $alias_s . "' is not a valid alias string.");
     }
 
@@ -126,8 +139,10 @@ class Grafana extends Transport
         return $aliases;
     }
 
-    public static function get_field_from_access($obj, $access_order_array)
-    {
+    public static function get_field_from_access_order(
+        $obj,
+        $access_order_array
+    ) {
         if (empty($access_order_array)) {
             return $obj;
         }
@@ -141,7 +156,7 @@ class Grafana extends Transport
         }
 
         if (isset($ret)) {
-            return Grafana::get_field_from_access(
+            return Grafana::get_field_from_access_order(
                 $ret,
                 array_slice($access_order_array, 1)
             );
@@ -152,11 +167,38 @@ class Grafana extends Transport
 
     public static function alias_token($obj, $token)
     {
+        $keyword = $token["keyword"];
         $from = $token["from"];
         $to = $token["as"];
 
+        $obj_accesses = explode("->", $from);
+
+        if (isset($keyword)) {
+            if ($keyword == "join") {
+                $access_to_find_parent_array = array_slice(
+                    $obj_accesses,
+                    0,
+                    -1
+                );
+                $array_field_to_join_on = end($obj_accesses);
+                var_dump($access_to_find_parent_array);
+                return [
+                    $to => implode(
+                        '\n',
+                        array_map(
+                            fn($arr) => $arr[$array_field_to_join_on],
+                            Grafana::get_field_from_access_order(
+                                $obj,
+                                $access_to_find_parent_array
+                            )
+                        )
+                    ),
+                ];
+            }
+        }
+
         return [
-            $to => Grafana::get_field_from_access($obj, explode("->", $from)),
+            $to => Grafana::get_field_from_access_order($obj, $obj_accesses),
         ];
     }
 
