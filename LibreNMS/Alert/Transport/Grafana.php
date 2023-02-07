@@ -126,7 +126,6 @@ class Grafana extends Transport
                     ];
                     break;
             }
-            var_dump($matches);
         }
 
         throw new AlertTransportDeliveryException(
@@ -185,7 +184,6 @@ class Grafana extends Transport
                     -1
                 );
                 $array_field_to_join_on = end($obj_accesses);
-                var_dump($access_to_find_parent_array);
                 return [
                     $to => implode(
                         ", ",
