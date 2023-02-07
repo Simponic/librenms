@@ -128,9 +128,7 @@ class Grafana extends Transport
             }
         }
 
-        throw new AlertTransportDeliveryException(
-            "'" . $alias_s . "' is not a valid alias string."
-        );
+        throw new Exception("'" . $alias_s . "' is not a valid alias string.");
     }
 
     public static function tokenize_alias_strings($f_str)
@@ -163,9 +161,7 @@ class Grafana extends Transport
             );
         }
 
-        throw new AlertTransportDeliveryException(
-            "'" . $index . "' is not an accessible field"
-        );
+        throw new Exception("'" . $index . "' is not an accessible field");
     }
 
     public static function alias_token($obj, $token)
