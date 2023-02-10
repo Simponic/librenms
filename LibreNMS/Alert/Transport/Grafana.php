@@ -136,10 +136,14 @@ class Grafana extends Transport
 
         $index = $access_order_array[0];
 
-        if (is_object($obj)) {
-            $ret = $obj->{$index};
-        } elseif (is_array($obj)) {
-            $ret = $obj[$index];
+        try {
+            if (is_object($obj)) {
+                $ret = $obj->{$index};
+            } elseif (is_array($obj)) {
+                $ret = $obj[$index];
+            }
+        } catch (Exception) {
+            return [];
         }
 
         if (isset($ret)) {
