@@ -33,7 +33,7 @@ class Grafana extends Transport
     {
         if (!empty($this->config)) {
             $opts["alias"] = $this->config["alias"];
-            $opts["title"] = $this->config["title"];
+            $opts["title_template"] = $this->config["title_template"];
             $opts["url"] = $this->config["url"];
             $opts["message_template"] = $this->config["message_template"];
             $opts["detail_link_template"] =
@@ -74,12 +74,7 @@ class Grafana extends Transport
 
     private function makeBody($obj, $opts)
     {
-        return (object) array_filter(
-            array_merge(
-                (array) $this->grafana_base_body($obj, $opts),
-                (array) $this->rendered_body($obj, $opts)
-            )
-        );
+        return (object) array_filter((array) $this->rendered_body($obj, $opts));
     }
 
     private function rendered_body($obj, $opts)
@@ -92,13 +87,6 @@ class Grafana extends Transport
                 ? SimpleTemplate::parse($opts["detail_link_template"], $obj)
                 : null,
         ]);
-    }
-
-    private function grafana_base_body($obj, $opts)
-    {
-        return [
-            "title" => $opts["title"],
-        ];
     }
 
     public static function tokenize_alias($alias_s)
@@ -230,7 +218,7 @@ class Grafana extends Transport
                 ],
                 [
                     "title" => "Alert Title",
-                    "name" => "title",
+                    "name" => "title_template",
                     "descr" => "Grafana Alert Title",
                     "type" => "text",
                 ],
@@ -249,7 +237,7 @@ class Grafana extends Transport
             ],
             "validation" => [
                 "url" => "required|url",
-                "title" => "required",
+                "title_template" => "required",
                 "alias" => "required",
             ],
         ];
