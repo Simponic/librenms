@@ -86,6 +86,9 @@ class Grafana extends Transport
             "link_to_upstream_details" => $opts["detail_link_template"]
                 ? SimpleTemplate::parse($opts["detail_link_template"], $obj)
                 : null,
+            "title" => $opts["title_template"]
+                ? SimpleTemplate::parse($opts["title_template"], $obj)
+                : null,
         ]);
     }
 
