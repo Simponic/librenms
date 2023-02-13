@@ -24,6 +24,7 @@ use LibreNMS\Util\Proxy;
 
 use App\View\SimpleTemplate;
 use Exception;
+use Log;
 
 class Grafana extends Transport
 {
@@ -39,20 +40,24 @@ class Grafana extends Transport
             $opts["detail_link_template"] =
                 $this->config["detail_link_template"];
         }
+        Log::info("Attempting to contact grafana");
         return $this->contactGrafana($obj, $opts);
     }
 
     public function contactGrafana($obj, $opts)
     {
+        $curl = curl_init();
+        Proxy::applyToCurl($curl);
+
+        Log::info("Attempting to build aliases");
         $aliased_obj = Grafana::build_obj_alias_from_aliases(
             $obj,
             $opts["alias"]
         );
+
+        Log::info("Built aliases, attempting to render body");
         $body = $this->makeBody($aliased_obj, $opts);
-
-        $curl = curl_init();
-        Proxy::applyToCurl($curl);
-
+        Log::info("Built body, attempting to send to webhook");
         curl_setopt($curl, CURLOPT_URL, $opts["url"]);
         curl_setopt($curl, CURLOPT_HTTPHEADER, [
             "Accept: application/json",
@@ -146,6 +151,7 @@ class Grafana extends Transport
                 $ret = $obj[$index];
             }
         } catch (Exception) {
+            // No way to access field
             return [];
         }
 
@@ -155,8 +161,7 @@ class Grafana extends Transport
                 array_slice($access_order_array, 1)
             );
         }
-
-        throw new Exception("'" . $index . "' is not an accessible field");
+        return [];
     }
 
     public static function alias_token($obj, $token)
