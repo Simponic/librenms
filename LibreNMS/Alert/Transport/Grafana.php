@@ -24,7 +24,6 @@ use LibreNMS\Util\Proxy;
 
 use App\View\SimpleTemplate;
 use Exception;
-use Log;
 
 class Grafana extends Transport
 {
@@ -40,7 +39,6 @@ class Grafana extends Transport
             $opts["detail_link_template"] =
                 $this->config["detail_link_template"];
         }
-        Log::info("Attempting to contact grafana");
         return $this->contactGrafana($obj, $opts);
     }
 
@@ -49,15 +47,12 @@ class Grafana extends Transport
         $curl = curl_init();
         Proxy::applyToCurl($curl);
 
-        Log::info("Attempting to build aliases");
         $aliased_obj = Grafana::build_obj_alias_from_aliases(
             $obj,
             $opts["alias"]
         );
 
-        Log::info("Built aliases, attempting to render body");
         $body = $this->makeBody($aliased_obj, $opts);
-        Log::info("Built body, attempting to send to webhook");
         curl_setopt($curl, CURLOPT_URL, $opts["url"]);
         curl_setopt($curl, CURLOPT_HTTPHEADER, [
             "Accept: application/json",
