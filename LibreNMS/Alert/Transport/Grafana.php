@@ -24,6 +24,7 @@ use LibreNMS\Util\Proxy;
 
 use App\View\SimpleTemplate;
 use Exception;
+use Log;
 
 class Grafana extends Transport
 {
@@ -44,6 +45,8 @@ class Grafana extends Transport
 
     public function contactGrafana($obj, $opts)
     {
+        Log::debug(json_encode($obj));
+
         $curl = curl_init();
         Proxy::applyToCurl($curl);
 
@@ -221,10 +224,10 @@ class Grafana extends Transport
                     "name" => "alias",
                     "descr" =>
                         "Alias strings (a as b, c->d as e, etc.) to use in templates",
-                    "type" => "text",
+                    "type" => "textarea",
                 ],
                 [
-                    "title" => "Alert Title",
+                    "title" => "Alert Title (template)",
                     "name" => "title_template",
                     "descr" => "Grafana Alert Title",
                     "type" => "text",
